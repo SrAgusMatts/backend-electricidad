@@ -1,6 +1,7 @@
 # Ignorar carpetas de compilación
 bin/
 obj/
+Migrations/
 
 # Ignorar configuraciones locales de Visual Studio
 .vs/
@@ -12,3 +13,6 @@ obj/
 # Ignorar archivos de logs y temporales
 *.log
 appsettings.Development.json
+
+# Ignorar configuraciones con secretos
+appsettings.json
