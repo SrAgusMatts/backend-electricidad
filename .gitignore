@@ -1,0 +1,14 @@
+# Ignorar carpetas de compilación
+bin/
+obj/
+
+# Ignorar configuraciones locales de Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+
+# Ignorar archivos de logs y temporales
+*.log
+appsettings.Development.json
