@@ -37,6 +37,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // 2. Servicios de Negocio (Lógica)
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IMarcaService, MarcaService>();
 
 builder.Services.AddHttpContextAccessor();
 

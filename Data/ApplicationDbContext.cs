@@ -9,5 +9,6 @@ namespace Backend.Data
         public DbSet<Producto> Productos { get; set; }
         public DbSet<Categoria> Categorias { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Marca> Marcas { get; set; }
     }
 }

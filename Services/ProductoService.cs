@@ -1,4 +1,5 @@
-﻿using Backend.DTOs;
+﻿using Backend.DTOs.Request;
+using Backend.DTOs.Response;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Http;
@@ -18,50 +19,95 @@ namespace Backend.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IEnumerable<Producto>> ObtenerTodos()
+        public async Task<IEnumerable<ProductoResponseDto>> ObtenerTodos()
         {
-            return await _unitOfWork.Productos.GetAllAsync();
+            var productos = await _unitOfWork.Productos.GetAllAsync(includeProperties: "Marca");
+
+            return productos.Select(p => new ProductoResponseDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                Precio = p.Precio,
+                Stock = p.Stock,
+                ImagenUrl = p.ImagenUrl,
+                CategoriaId = p.CategoriaId,
+                Marca = p.Marca != null ? new MarcaResponseDto
+                {
+                    Id = p.Marca.Id,
+                    Nombre = p.Marca.Nombre
+                } : null
+            });
         }
 
-        public async Task<Producto> CrearProducto(ProductoCreateDto dto)
+        public async Task<ProductoResponseDto?> ObtenerPorId(int id)
         {
+            var p = await _unitOfWork.Productos.GetByIdAsync(id);
 
+            if (p == null) return null;
+
+            return new ProductoResponseDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                Precio = p.Precio,
+                Stock = p.Stock,
+                ImagenUrl = p.ImagenUrl,
+                CategoriaId = p.CategoriaId,
+                Marca = p.Marca != null ? new MarcaResponseDto
+                {
+                    Id = p.Marca.Id,
+                    Nombre = p.Marca.Nombre
+                } : null
+            };
+        }
+
+        public async Task<Producto> CrearProducto(ProductoRequestDto dto)
+        {
             var nuevoProducto = new Producto
             {
                 Nombre = dto.Nombre,
-                Marca = dto.Marca,
                 Descripcion = dto.Descripcion,
                 Precio = dto.Precio,
                 Stock = dto.Stock,
                 CategoriaId = dto.CategoriaId,
+                MarcaId = dto.MarcaId,
                 ImagenUrl = ""
             };
 
             if (dto.Imagen != null)
             {
-
-                string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(dto.Imagen.FileName);
-
-                string rutaCarpeta = Path.Combine(_env.WebRootPath, "imagenes");
-
-                if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
-
-                string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
-
-                using (var stream = new FileStream(rutaCompleta, FileMode.Create))
-                {
-                    await dto.Imagen.CopyToAsync(stream);
-                }
-
-                var request = _httpContextAccessor.HttpContext!.Request;
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                nuevoProducto.ImagenUrl = $"{baseUrl}/imagenes/{nombreArchivo}";
+                nuevoProducto.ImagenUrl = await GuardarImagen(dto.Imagen);
             }
 
             await _unitOfWork.Productos.AddAsync(nuevoProducto);
             await _unitOfWork.CompleteAsync();
 
             return nuevoProducto;
+        }
+
+        public async Task ActualizarProducto(int id, ProductoRequestDto dto)
+        {
+            var productoExistente = await _unitOfWork.Productos.GetByIdAsync(id);
+
+            if (productoExistente != null)
+            {
+                productoExistente.Nombre = dto.Nombre;
+                productoExistente.Descripcion = dto.Descripcion;
+                productoExistente.Precio = dto.Precio;
+                productoExistente.Stock = dto.Stock;
+                productoExistente.CategoriaId = dto.CategoriaId;
+                productoExistente.MarcaId = dto.MarcaId;
+
+                if (dto.Imagen != null)
+                {
+                    productoExistente.ImagenUrl = await GuardarImagen(dto.Imagen);
+                }
+
+                _unitOfWork.Productos.Update(productoExistente);
+                await _unitOfWork.CompleteAsync();
+            }
         }
 
         public async Task EliminarProducto(int id)
@@ -74,28 +120,23 @@ namespace Backend.Services
             }
         }
 
-        public async Task<Producto?> ObtenerPorId(int id)
+        private async Task<string> GuardarImagen(IFormFile imagen)
         {
-            return await _unitOfWork.Productos.GetByIdAsync(id);
-        }
+            string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(imagen.FileName);
+            string rutaCarpeta = Path.Combine(_env.WebRootPath, "imagenes");
 
-        public async Task ActualizarProducto(int id, Producto producto)
-        {
-            var productoExistente = await _unitOfWork.Productos.GetByIdAsync(id);
+            if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
 
-            if (productoExistente != null)
+            string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
+
+            using (var stream = new FileStream(rutaCompleta, FileMode.Create))
             {
-                productoExistente.Nombre = producto.Nombre;
-                productoExistente.Marca = producto.Marca;
-                productoExistente.Descripcion = producto.Descripcion;
-                productoExistente.Precio = producto.Precio;
-                productoExistente.ImagenUrl = producto.ImagenUrl;
-                productoExistente.Stock = producto.Stock;
-                productoExistente.CategoriaId = producto.CategoriaId;
-
-                _unitOfWork.Productos.Update(productoExistente);
-                await _unitOfWork.CompleteAsync();
+                await imagen.CopyToAsync(stream);
             }
+
+            var request = _httpContextAccessor.HttpContext!.Request;
+            var baseUrl = $"{request.Scheme}://{request.Host}";
+            return $"{baseUrl}/imagenes/{nombreArchivo}";
         }
     }
 }

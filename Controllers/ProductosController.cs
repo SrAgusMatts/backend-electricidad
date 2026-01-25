@@ -1,4 +1,5 @@
-﻿using Backend.DTOs;
+﻿using Backend.DTOs.Request;
+using Backend.DTOs.Response;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -17,14 +18,14 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
+        public async Task<ActionResult<IEnumerable<ProductoResponseDto>>> GetProductos()
         {
             var productos = await _productoService.ObtenerTodos();
             return Ok(productos);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Producto>> GetProducto(int id)
+        public async Task<ActionResult<ProductoResponseDto>> GetProducto(int id)
         {
             var producto = await _productoService.ObtenerPorId(id);
 
@@ -37,14 +38,13 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Producto>> PostProducto([FromForm] ProductoCreateDto productoDto)
+        public async Task<ActionResult<Producto>> PostProducto([FromForm] ProductoRequestDto productoDto)
         {
             try
             {
-                // Delegamos TODO al servicio
                 var nuevoProducto = await _productoService.CrearProducto(productoDto);
 
-                return CreatedAtAction("GetProductos", new { id = nuevoProducto.Id }, nuevoProducto);
+                return CreatedAtAction(nameof(GetProducto), new { id = nuevoProducto.Id }, nuevoProducto);
             }
             catch (Exception ex)
             {
@@ -60,16 +60,12 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProducto(int id, Producto producto)
+        public async Task<IActionResult> PutProducto(int id, [FromForm] ProductoRequestDto productoDto)
         {
-            if (id != producto.Id)
-            {
-                return BadRequest("El ID del producto no coincide.");
-            }
 
             try
             {
-                await _productoService.ActualizarProducto(id, producto);
+                await _productoService.ActualizarProducto(id, productoDto);
                 return NoContent();
             }
             catch (Exception ex)
