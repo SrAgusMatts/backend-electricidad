@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Backend.Data;
+﻿using Backend.DTOs;
+using Backend.Interfaces;
 using Backend.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
@@ -9,40 +9,73 @@ namespace Backend.Controllers
     [ApiController]
     public class ProductosController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IProductoService _productoService;
 
-        public ProductosController(ApplicationDbContext context)
+        public ProductosController(IProductoService productoService)
         {
-            _context = context;
+            _productoService = productoService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
         {
-
-            return await _context.Productos.Include(p => p.Categoria).ToListAsync();
+            var productos = await _productoService.ObtenerTodos();
+            return Ok(productos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Producto>> GetProducto(int id)
         {
-            var producto = await _context.Productos.Include(p => p.Categoria).FirstOrDefaultAsync(p => p.Id == id);
+            var producto = await _productoService.ObtenerPorId(id);
 
             if (producto == null)
             {
-                return NotFound();
+                return NotFound("Producto no encontrado.");
             }
 
-            return producto;
+            return Ok(producto);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Producto>> PostProducto(Producto producto)
+        public async Task<ActionResult<Producto>> PostProducto([FromForm] ProductoCreateDto productoDto)
         {
-            _context.Productos.Add(producto);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Delegamos TODO al servicio
+                var nuevoProducto = await _productoService.CrearProducto(productoDto);
 
-            return CreatedAtAction("GetProducto", new { id = producto.Id }, producto);
+                return CreatedAtAction("GetProductos", new { id = nuevoProducto.Id }, nuevoProducto);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProducto(int id)
+        {
+            await _productoService.EliminarProducto(id);
+            return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutProducto(int id, Producto producto)
+        {
+            if (id != producto.Id)
+            {
+                return BadRequest("El ID del producto no coincide.");
+            }
+
+            try
+            {
+                await _productoService.ActualizarProducto(id, producto);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

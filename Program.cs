@@ -1,4 +1,7 @@
 using Backend.Data;
+using Backend.Interfaces;
+using Backend.Repositories;
+using Backend.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +31,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 1. Unit of Work (Maneja la DB)
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// 2. Servicios de Negocio (Lógica)
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -36,9 +48,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStaticFiles();
+
 app.UseHttpsRedirection();
 
 app.UseCors(MisOrigenesPermitidos);
+
+app.UseStaticFiles();
 
 app.UseAuthorization();
 
