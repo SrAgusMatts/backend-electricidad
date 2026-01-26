@@ -7,6 +7,7 @@ namespace Backend.Interfaces
         IGenericRepository<Producto> Productos { get; }
         IGenericRepository<Usuario> Usuarios { get; }
         IGenericRepository<Marca> Marcas { get; }
+        IGenericRepository<Pedido> Pedidos { get; }
         Task<int> CompleteAsync();
     }
 }

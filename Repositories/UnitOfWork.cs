@@ -11,6 +11,7 @@ namespace Backend.Repositories
         private IGenericRepository<Producto> _productos;
         private IGenericRepository<Usuario> _usuarios;
         private IGenericRepository<Marca> _marcas;
+        private IGenericRepository<Pedido> _pedidos;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -20,6 +21,7 @@ namespace Backend.Repositories
         public IGenericRepository<Producto> Productos => _productos ??= new GenericRepository<Producto>(_context);
         public IGenericRepository<Usuario> Usuarios => _usuarios ??= new GenericRepository<Usuario>(_context);
         public IGenericRepository<Marca> Marcas => _marcas ??= new GenericRepository<Marca>(_context);
+        public IGenericRepository<Pedido> Pedidos => _pedidos ??= new GenericRepository<Pedido>(_context);
 
         public async Task<int> CompleteAsync()
         {
