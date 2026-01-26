@@ -6,7 +6,7 @@ namespace Backend.Models
     {
         public int Id { get; set; }
 
-        public DateTime Fecha { get; set; } = DateTime.Now;
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
         public EstadoPedido Estado { get; set; } = EstadoPedido.Pendiente;
 

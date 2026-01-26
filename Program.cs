@@ -4,6 +4,8 @@ using Backend.Repositories;
 using Backend.Services;
 using Microsoft.EntityFrameworkCore;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 var MisOrigenesPermitidos = "_misOrigenesPermitidos";
@@ -31,10 +33,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 1. Unit of Work (Maneja la DB)
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// 2. Servicios de Negocio (Lógica)
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IMarcaService, MarcaService>();
@@ -55,8 +55,6 @@ app.UseStaticFiles();
 app.UseHttpsRedirection();
 
 app.UseCors(MisOrigenesPermitidos);
-
-app.UseStaticFiles();
 
 app.UseAuthorization();
 

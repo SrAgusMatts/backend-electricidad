@@ -16,20 +16,18 @@ namespace Backend.Services
 
         public async Task<PedidoResponseDto> CrearPedido(PedidoCreateDto dto)
         {
-            // 1. Crear Entidad (Como antes)
             var nuevoPedido = new Pedido
             {
                 NombreCliente = dto.NombreCliente,
                 Telefono = dto.Telefono,
                 Email = dto.Email,
-                Fecha = DateTime.Now,
+                Fecha = DateTime.UtcNow,
                 Estado = EstadoPedido.Pendiente,
                 Detalles = new List<DetallePedido>()
             };
 
             decimal totalCalculado = 0;
 
-            // 2. Procesar Ítems
             foreach (var itemDto in dto.Items)
             {
                 var productoReal = await _unitOfWork.Productos.GetByIdAsync(itemDto.ProductoId);
@@ -51,8 +49,18 @@ namespace Backend.Services
 
             nuevoPedido.Total = totalCalculado;
 
-            await _unitOfWork.Pedidos.AddAsync(nuevoPedido);
-            await _unitOfWork.CompleteAsync();
+            try
+            {
+                await _unitOfWork.Pedidos.AddAsync(nuevoPedido);
+                await _unitOfWork.CompleteAsync();
+            }
+            catch (Exception ex)
+            {
+                var mensajeError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                Console.WriteLine("🔴 ERROR CRÍTICO AL GUARDAR PEDIDO: " + mensajeError);
+
+                throw new Exception("Error de Base de Datos: " + mensajeError);
+            }
 
             var response = new PedidoResponseDto
             {
@@ -72,6 +80,78 @@ namespace Backend.Services
             };
 
             return response;
+        }
+        public async Task<List<PedidoResponseDto>> ObtenerPedidos()
+        {
+            // Buscamos todos los pedidos e incluimos los detalles
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync(includeProperties: "Detalles");
+
+            var response = pedidos.Select(p => new PedidoResponseDto
+            {
+                Id = p.Id,
+                Fecha = p.Fecha,
+                Estado = p.Estado.ToString(),
+                NombreCliente = p.NombreCliente,
+                Telefono = p.Telefono,
+                Email = p.Email,
+                Total = p.Total,
+                Items = p.Detalles.Select(d => new DetallePedidoResponseDto
+                {
+                    ProductoId = d.ProductoId,
+                    NombreProducto = d.NombreProducto,
+                    Cantidad = d.Cantidad,
+                    PrecioUnitario = d.PrecioUnitario,
+                    Subtotal = d.Subtotal
+                }).ToList()
+            })
+            .OrderBy(x => x.Fecha)
+            .ToList();
+
+            return response;
+        }
+        public async Task<PedidoResponseDto?> ObtenerPedidoPorId(int id)
+        {
+
+            var todosLosPedidos = await _unitOfWork.Pedidos.GetAllAsync(includeProperties: "Detalles");
+
+            var pedido = todosLosPedidos.FirstOrDefault(p => p.Id == id);
+
+            if (pedido == null) return null;
+
+            return new PedidoResponseDto
+            {
+                Id = pedido.Id,
+                Fecha = pedido.Fecha,
+                Estado = pedido.Estado.ToString(),
+                NombreCliente = pedido.NombreCliente,
+                Telefono = pedido.Telefono,
+                Email = pedido.Email,
+                Total = pedido.Total,
+                Items = pedido.Detalles.Select(d => new DetallePedidoResponseDto
+                {
+                    ProductoId = d.ProductoId,
+                    NombreProducto = d.NombreProducto,
+                    Cantidad = d.Cantidad,
+                    PrecioUnitario = d.PrecioUnitario,
+                    Subtotal = d.Subtotal
+                }).ToList()
+            };
+        }
+
+        // 👇 MÉTODO CAMBIAR ESTADO
+        public async Task<bool> CambiarEstado(int id, string nuevoEstado)
+        {
+            var pedido = await _unitOfWork.Pedidos.GetByIdAsync(id);
+            if (pedido == null) return false;
+
+            if (Enum.TryParse<EstadoPedido>(nuevoEstado, out var estadoEnum))
+            {
+                pedido.Estado = estadoEnum;
+                _unitOfWork.Pedidos.Update(pedido);
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            return false;
         }
     }
 }

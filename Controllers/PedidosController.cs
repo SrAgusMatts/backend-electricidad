@@ -17,23 +17,38 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<PedidoResponseDto>> PostPedido([FromBody] PedidoCreateDto dto)
+        public async Task<ActionResult<PedidoResponseDto>> Crear([FromBody] PedidoCreateDto dto)
         {
-            try
-            {
-                if (dto.Items == null || dto.Items.Count == 0)
-                {
-                    return BadRequest("El carrito no puede estar vacío.");
-                }
+            var resultado = await _pedidoService.CrearPedido(dto);
+            return Ok(resultado);
+        }
 
-                var resultado = await _pedidoService.CrearPedido(dto);
+        [HttpGet]
+        public async Task<ActionResult<List<PedidoResponseDto>>> ObtenerTodos()
+        {
+            var pedidos = await _pedidoService.ObtenerPedidos();
+            return Ok(pedidos);
+        }
 
-                return Ok(resultado);
-            }
-            catch (Exception ex)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PedidoResponseDto>> ObtenerPorId(int id)
+        {
+            var pedido = await _pedidoService.ObtenerPedidoPorId(id);
+
+            if (pedido == null)
             {
-                return BadRequest($"Error al crear el pedido: {ex.Message}");
+                return NotFound();
             }
+
+            return Ok(pedido);
+        }
+
+        [HttpPut("{id}/estado")]
+        public async Task<IActionResult> ActualizarEstado(int id, [FromBody] string nuevoEstado)
+        {
+            var exito = await _pedidoService.CambiarEstado(id, nuevoEstado);
+            if (!exito) return BadRequest("No se pudo actualizar el estado.");
+            return NoContent();
         }
     }
 }
