@@ -44,9 +44,10 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}/estado")]
-        public async Task<IActionResult> ActualizarEstado(int id, [FromBody] string nuevoEstado)
+        public async Task<IActionResult> ActualizarEstado(int id, [FromBody] EstadoDto dto)
         {
-            var exito = await _pedidoService.CambiarEstado(id, nuevoEstado);
+            var exito = await _pedidoService.CambiarEstado(id, dto.Estado);
+
             if (!exito) return BadRequest("No se pudo actualizar el estado.");
             return NoContent();
         }

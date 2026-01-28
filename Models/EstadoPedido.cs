@@ -3,7 +3,7 @@
     public enum EstadoPedido
     {
         Pendiente = 0,
-        Confirmado = 1,
+        Completado = 1,
         Cancelado = 2 
     }
 }

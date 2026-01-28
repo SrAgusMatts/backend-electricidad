@@ -144,7 +144,7 @@ namespace Backend.Services
             var pedido = await _unitOfWork.Pedidos.GetByIdAsync(id);
             if (pedido == null) return false;
 
-            if (Enum.TryParse<EstadoPedido>(nuevoEstado, out var estadoEnum))
+            if (Enum.TryParse<EstadoPedido>(nuevoEstado, true, out var estadoEnum))
             {
                 pedido.Estado = estadoEnum;
                 _unitOfWork.Pedidos.Update(pedido);
