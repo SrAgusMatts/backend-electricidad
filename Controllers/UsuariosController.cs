@@ -39,7 +39,13 @@ namespace Backend.Controllers
                 return Unauthorized("Correo o contraseña incorrectos.");
             }
 
-            return Ok(usuario);
+            return Ok(new
+            {
+                id = usuario.Id,
+                nombre = usuario.Nombre,
+                email = usuario.Email,
+                rol = usuario.Rol,
+            });
         }
     }
 }

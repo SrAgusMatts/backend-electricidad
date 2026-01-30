@@ -17,7 +17,10 @@ namespace Backend.Services
             var existe = _unitOfWork.Usuarios.Find(u => u.Email == usuario.Email).FirstOrDefault();
             if (existe != null) throw new Exception("El correo ya existe.");
 
+            usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
+
             usuario.Rol = "Cliente";
+
             await _unitOfWork.Usuarios.AddAsync(usuario);
             await _unitOfWork.CompleteAsync();
 
@@ -26,9 +29,23 @@ namespace Backend.Services
 
         public Usuario? ValidarLogin(string email, string password)
         {
-            return _unitOfWork.Usuarios
-                .Find(u => u.Email == email && u.Password == password)
+            var usuario = _unitOfWork.Usuarios
+                .Find(u => u.Email == email)
                 .FirstOrDefault();
+
+            if (usuario == null) return null;
+
+
+            bool esCorrecta = BCrypt.Net.BCrypt.Verify(password, usuario.Password);
+
+            if (esCorrecta)
+            {
+                return usuario;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
