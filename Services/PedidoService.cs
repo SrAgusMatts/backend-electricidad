@@ -138,20 +138,44 @@ namespace Backend.Services
             };
         }
 
-        // 👇 MÉTODO CAMBIAR ESTADO
         public async Task<bool> CambiarEstado(int id, string nuevoEstado)
         {
-            var pedido = await _unitOfWork.Pedidos.GetByIdAsync(id);
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync(includeProperties: "Detalles");
+            var pedido = pedidos.FirstOrDefault(p => p.Id == id);
+
             if (pedido == null) return false;
 
-            if (Enum.TryParse<EstadoPedido>(nuevoEstado, true, out var estadoEnum))
+            if (!Enum.TryParse<EstadoPedido>(nuevoEstado, true, out var estadoEnum))
             {
-                pedido.Estado = estadoEnum;
-                _unitOfWork.Pedidos.Update(pedido);
-                await _unitOfWork.CompleteAsync();
-                return true;
+                return false;
             }
-            return false;
+
+            if (estadoEnum == EstadoPedido.Completado && pedido.Estado != EstadoPedido.Completado)
+            {
+                if (pedido.Detalles != null && pedido.Detalles.Any())
+                {
+                    foreach (var detalle in pedido.Detalles)
+                    {
+                        var producto = await _unitOfWork.Productos.GetByIdAsync(detalle.ProductoId);
+
+                        if (producto != null)
+                        {
+                            producto.Stock -= detalle.Cantidad;
+
+                            if (producto.Stock < 0) producto.Stock = 0;
+
+                            _unitOfWork.Productos.Update(producto);
+                        }
+                    }
+                }
+            }
+
+            pedido.Estado = estadoEnum;
+            _unitOfWork.Pedidos.Update(pedido);
+
+            await _unitOfWork.CompleteAsync();
+
+            return true;
         }
     }
 }
