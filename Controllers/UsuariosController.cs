@@ -1,5 +1,6 @@
 ﻿using Backend.Interfaces;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -9,10 +10,12 @@ namespace Backend.Controllers
     public class UsuariosController : ControllerBase
     {
         private readonly IUsuarioService _usuarioService;
+        private readonly IAuthService _authService;
 
-        public UsuariosController(IUsuarioService usuarioService)
+        public UsuariosController(IUsuarioService usuarioService, IAuthService authService)
         {
             _usuarioService = usuarioService;
+            _authService = authService;
         }
 
         [HttpPost("registro")]
@@ -30,7 +33,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost("login")]
-        public ActionResult<Usuario> Login(Usuario loginData)
+        public ActionResult<object> Login([FromBody] Usuario loginData)
         {
             var usuario = _usuarioService.ValidarLogin(loginData.Email, loginData.Password);
 
@@ -39,12 +42,18 @@ namespace Backend.Controllers
                 return Unauthorized("Correo o contraseña incorrectos.");
             }
 
+            var tokenJwt = _authService.GenerarTokenJwt(usuario);
+
             return Ok(new
             {
-                id = usuario.Id,
-                nombre = usuario.Nombre,
-                email = usuario.Email,
-                rol = usuario.Rol,
+                token = tokenJwt,
+                usuario = new
+                {
+                    id = usuario.Id,
+                    nombre = usuario.Nombre,
+                    email = usuario.Email,
+                    rol = usuario.Rol,
+                }
             });
         }
     }
