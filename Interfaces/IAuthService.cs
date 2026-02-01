@@ -6,5 +6,6 @@ namespace Backend.Interfaces
     {
         Task<bool> SolicitarRecuperacion(string email);
         Task<bool> ResetearPassword(string email, string token, string nuevaPassword);
+        string GenerarTokenJwt(Usuario usuario);
     }
 }

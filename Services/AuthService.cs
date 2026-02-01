@@ -1,5 +1,10 @@
 ﻿using Backend.Interfaces;
+using Backend.Models;
+using System.IdentityModel.Tokens.Jwt;
 using Backend.Templates;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Backend.Services
 {
@@ -18,15 +23,12 @@ namespace Backend.Services
 
         public async Task<bool> SolicitarRecuperacion(string email)
         {
-            // 👇 CORRECCIÓN AQUÍ:
-            // Como es un repo genérico, traemos la lista y filtramos manualmente.
-            // (Si tu repo tiene un método Find(x => ...), úsalo, si no, usa GetAll)
+
             var usuarios = await _unitOfWork.Usuarios.GetAllAsync();
             var usuario = usuarios.FirstOrDefault(u => u.Email == email);
 
             if (usuario == null) return true;
 
-            // Generar Token
             usuario.ResetToken = Guid.NewGuid().ToString();
             usuario.ResetTokenExpira = DateTime.UtcNow.AddMinutes(15);
 
@@ -53,7 +55,6 @@ namespace Backend.Services
 
             usuario.Password = BCrypt.Net.BCrypt.HashPassword(nuevaPassword);
 
-            // Limpiar token
             usuario.ResetToken = null;
             usuario.ResetTokenExpira = null;
 
@@ -61,6 +62,34 @@ namespace Backend.Services
             await _unitOfWork.CompleteAsync();
 
             return true;
+        }
+
+        public string GenerarTokenJwt(Usuario usuario)
+        {
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                new Claim(ClaimTypes.Email, usuario.Email),
+                
+                new Claim(ClaimTypes.Role, usuario.Rol)
+            };
+
+            var tokenKey = _config["AppSettings:Token"] ?? throw new Exception("Falta el Token en appsettings.json");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(1),
+                SigningCredentials = creds
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return tokenHandler.WriteToken(token);
         }
     }
 }

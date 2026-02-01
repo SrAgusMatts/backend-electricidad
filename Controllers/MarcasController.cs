@@ -1,5 +1,6 @@
 ﻿using Backend.Interfaces;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -23,6 +24,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Marca>> PostMarca(Marca marca)
         {
             var nuevaMarca = await _marcaService.CrearMarca(marca);
