@@ -2,6 +2,7 @@
 using Backend.DTOs.Response;
 using Backend.Interfaces;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -38,6 +39,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Producto>> PostProducto([FromForm] ProductoRequestDto productoDto)
         {
             try
@@ -53,6 +55,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProducto(int id)
         {
             await _productoService.EliminarProducto(id);
@@ -60,6 +63,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutProducto(int id, [FromForm] ProductoRequestDto productoDto)
         {
 

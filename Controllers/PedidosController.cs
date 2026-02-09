@@ -1,6 +1,7 @@
 ﻿using Backend.DTOs.Request;
 using Backend.DTOs.Response;
 using Backend.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -44,6 +45,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}/estado")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ActualizarEstado(int id, [FromBody] EstadoDto dto)
         {
             var exito = await _pedidoService.CambiarEstado(id, dto.Estado);
