@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-// 2. Configuración de CORS (Para que el Front se conecte)
 var MisOrigenesPermitidos = "_misOrigenesPermitidos";
 builder.Services.AddCors(options =>
 {
@@ -25,7 +24,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-// 3. Conexión a Base de Datos (Supabase / PostgreSQL)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -67,7 +65,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var secretKey = builder.Configuration["AppSettings:Token"];
 
-// Validamos que exista la clave antes de arrancar
 if (string.IsNullOrEmpty(secretKey))
 {
     throw new Exception("El Token JWT no está configurado en appsettings.json");
@@ -81,14 +78,14 @@ builder.Services.AddAuthentication(config =>
     config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(config =>
 {
-    config.RequireHttpsMetadata = false; // En desarrollo está bien false
+    config.RequireHttpsMetadata = false;
     config.SaveToken = true;
     config.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-        ValidateIssuer = false, // No validamos emisor por ahora
-        ValidateAudience = false, // No validamos audiencia por ahora
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
@@ -96,7 +93,6 @@ builder.Services.AddAuthentication(config =>
 
 builder.Services.AddHttpContextAccessor();
 
-// 6. Inyección de Dependencias
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
@@ -107,17 +103,19 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 
-// ORDEN IMPORTANTE:
-app.UseCors(MisOrigenesPermitidos); // 1. CORS
-app.UseAuthentication();            // 2. Autenticación (¿Quién sos?)
-app.UseAuthorization();             // 3. Autorización (¿Qué rol tenés?)
+app.UseCors(MisOrigenesPermitidos);
+app.UseAuthentication();           
+app.UseAuthorization();            
 
 app.MapControllers();
 
