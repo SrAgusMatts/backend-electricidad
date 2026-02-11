@@ -21,7 +21,7 @@ namespace Backend.Services
 
         public async Task<IEnumerable<ProductoResponseDto>> ObtenerTodos()
         {
-            var productos = await _unitOfWork.Productos.GetAllAsync(includeProperties: "Marca");
+            var productos = await _unitOfWork.Productos.GetAllAsync(includeProperties: "Marca,Categoria");
 
             return productos.Select(p => new ProductoResponseDto
             {
@@ -31,11 +31,15 @@ namespace Backend.Services
                 Precio = p.Precio,
                 Stock = p.Stock,
                 ImagenUrl = p.ImagenUrl,
-                CategoriaId = p.CategoriaId,
                 Marca = p.Marca != null ? new MarcaResponseDto
                 {
                     Id = p.Marca.Id,
                     Nombre = p.Marca.Nombre
+                } : null,
+                Categoria = p.Categoria != null ? new CategoriaResponseDto
+                {
+                    Id = p.Categoria.Id,
+                    Nombre = p.Categoria.Nombre
                 } : null
             });
         }
@@ -54,7 +58,11 @@ namespace Backend.Services
                 Precio = p.Precio,
                 Stock = p.Stock,
                 ImagenUrl = p.ImagenUrl,
-                CategoriaId = p.CategoriaId,
+                Categoria = p.Categoria != null ? new CategoriaResponseDto
+                {
+                    Id = p.Categoria.Id,
+                    Nombre = p.Categoria.Nombre
+                } : null,
                 Marca = p.Marca != null ? new MarcaResponseDto
                 {
                     Id = p.Marca.Id,
